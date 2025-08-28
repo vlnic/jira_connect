@@ -1,18 +1,8 @@
 defmodule JiraConnect do
-  @moduledoc """
-  Documentation for `JiraConnect`.
-  """
 
-  @doc """
-  Hello world.
+  def finch_name, do: JiraConnect.Finch
 
-  ## Examples
+  def host, do: Application.get_env(:jira_connect, :host)
 
-      iex> JiraConnect.hello()
-      :world
-
-  """
-  def hello do
-    :world
-  end
+  def auth_token, do: Application.get_env(:jira_connect, :api_token)
 end

@@ -4,7 +4,7 @@ defmodule JiraConnect.Application do
   @impl true
   def start(_type, _args) do
     children = [
-      {Finch, name: JiraConnect.Finch}
+      {Finch, name: JiraConnect.finch_name()}
     ]
 
     opts = [strategy: :one_for_one, name: JiraConnect.Supervisor]

@@ -22,7 +22,9 @@ defmodule JiraConnect.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:finch, "~> 0.20"}
+      {:finch, "~> 0.20"},
+      {:construct, "~> 3.0"},
+      {:jason, "~> 1.4"}
     ]
   end
 end
