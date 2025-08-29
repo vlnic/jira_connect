@@ -9,7 +9,7 @@ defmodule JiraConnect.HTTP do
 
   @callback request(method, uri, body, headers, opts) :: {:ok, status, body, headers} | {:error, reason}
 
-  @impl Application.compile_env(:jira_connect, :http_impl, JiraConnect.HTTP.Finch)
+  @client_impl Application.compile_env(:jira_connect, :http_impl, JiraConnect.HTTP.Finch)
 
   defmodule State do
     defstruct [
@@ -32,27 +32,50 @@ defmodule JiraConnect.HTTP do
     |> build_request_headers()
     |> build_request_body()
     |> process_request()
+    |> process_response()
   end
 
-  defp process_request(%{
+  defp process_request(%State{
     method: method,
-    uri: uri,
+    uri: %URI{} = uri,
     req_body: body,
-    headers: headers,
+    req_headers: headers,
     transport_opts: opts
   } = state) do
-    case @impl.request(method, uri, body, headers, opts) do
+    case @client_impl.request(method, URI.to_string(uri), body, headers, opts) do
       {:ok, status, body, headers} ->
         %{state | status: status, resp_body: body, resp_headers: headers}
 
       {:error, reason} ->
-        %{state | error: reason}
+        %{state | error: reason, status: 0}
     end
   end
 
+  defp process_response(%State{status: code, resp_body: body}) when code in 200..299 do
+    case Jason.decode(body) do
+      {:ok, parsed} -> {:ok, parsed}
+      _ -> {:ok, body}
+    end
+  end
+  defp process_response(%State{status: code, resp_body: body}) when code in 400..499 do
+    case Jason.decode(body) do
+      {:ok, map} -> {:error, %{reason: map}}
+      _ -> {:error, %{reason: body}}
+    end
+  end
+  defp process_response(%State{status: code}) when code in 500..599 do
+    {:error, %{reason: "service_unavailable"}}
+  end
+  defp process_response(%State{error: error}) do
+    {:error, %{reason: error}}
+  end
+
   defp build_request_headers(%State{} = state) do
-    headers = [state.req_headers | {"Authorization", "Bearer #{JiraConnect.auth_token()}"}]
-    %{state | req_headers: List.flatten(headers)}
+    headers = [
+      {"Authorization", "Bearer #{JiraConnect.auth_token()}"},
+      {"Content-Type", "application/json"}
+    ]
+    %{state | req_headers: headers}
   end
 
   defp build_request_body(%{method: method} = state) when method in [:get, :delete, :header] do
@@ -60,16 +83,7 @@ defmodule JiraConnect.HTTP do
   end
 
   defp build_request_body(%State{} = state) do
-    if is_struct(state.params) do
-      json =
-        state.params
-        |> Map.from_struct()
-        |> Jason.encode!()
-
-      %{state | req_body: json}
-    else
-      %{state | req_body: Jason.encode!(state.params)}
-    end
+    %{state | req_body: Jason.encode!(state.params)}
   end
 
   defp build_request_uri(%State{method: method} = state) when method in [:get, :delete] do
@@ -86,14 +100,14 @@ defmodule JiraConnect.HTTP do
         end
       end)
 
-    %{state | uri: prepare_uri(path)}
+    %{state | uri: build_uri(path)}
   end
 
   defp build_request_uri(%State{path: path} = state) do
-    %{state | uri: prepare_uri(path)}
+    %{state | uri: build_uri(path)}
   end
 
-  defp prepare_uri(path) do
+  defp build_uri(path) do
     JiraConnect.host()
     |> Path.join(path)
     |> URI.parse()
