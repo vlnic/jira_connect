@@ -3,7 +3,7 @@ defmodule JiraConnect.HTTP do
   @type uri :: binary() | URI.t()
   @type body :: binary() | map() | tuple()
   @type headers :: list()
-  @type opts :: Keyword.t()
+  @type opts :: Keyword.t() | term()
   @type status :: non_neg_integer()
   @type reason :: term()
 
@@ -14,8 +14,7 @@ defmodule JiraConnect.HTTP do
   defmodule State do
     defstruct [
       :method, :uri, :path, :req_headers, :req_body,
-      :opts, :client_opts, :transport_opts, :params,
-      :resp_body, :resp_headers, :status,
+      :opts, :params, :resp_body, :resp_headers, :status,
       :error
     ]
   end
@@ -40,7 +39,7 @@ defmodule JiraConnect.HTTP do
     uri: %URI{} = uri,
     req_body: body,
     req_headers: headers,
-    transport_opts: opts
+    opts: opts
   } = state) do
     case @client_impl.request(method, URI.to_string(uri), body, headers, opts) do
       {:ok, status, body, headers} ->
@@ -54,13 +53,13 @@ defmodule JiraConnect.HTTP do
   defp process_response(%State{status: code, resp_body: body}) when code in 200..299 do
     case Jason.decode(body) do
       {:ok, parsed} -> {:ok, parsed}
-      _ -> {:ok, body}
+      {:error, _reason} -> {:ok, body}
     end
   end
   defp process_response(%State{status: code, resp_body: body}) when code in 400..499 do
     case Jason.decode(body) do
       {:ok, map} -> {:error, %{reason: map}}
-      _ -> {:error, %{reason: body}}
+      {:error, _reason} -> {:error, %{reason: body}}
     end
   end
   defp process_response(%State{status: code}) when code in 500..599 do
@@ -78,7 +77,7 @@ defmodule JiraConnect.HTTP do
     %{state | req_headers: headers}
   end
 
-  defp build_request_body(%{method: method} = state) when method in [:get, :delete, :header] do
+  defp build_request_body(%State{method: method} = state) when method in [:get, :delete] do
     %{state | req_body: ""}
   end
 
