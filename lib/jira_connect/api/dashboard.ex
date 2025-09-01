@@ -5,8 +5,8 @@ defmodule JiraConnect.Dashboard do
     endpoint: {:get, "/rest/api/2/dashboard"},
     params: [
       filter: {:string, default: nil},
-      startAt: {:integer, default: nil},
-      maxResults: {:integer, default: nil}
+      start_at: {:integer, default: nil},
+      max_results: {:integer, default: nil}
     ]
 
   action :get,

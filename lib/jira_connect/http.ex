@@ -85,7 +85,13 @@ defmodule JiraConnect.HTTP do
   end
 
   defp build_request_body(%State{} = state) do
-    %{state | req_body: Jason.encode!(state.params)}
+    params =
+      state.params
+      |> Map.to_list()
+      |> Enum.reduce(%{}, fn({k, v}, acc) ->
+        Map.put(acc, snake_case_to_camel_case(k), v)
+      end)
+    %{state | req_body: Jason.encode!(params)}
   end
 
   defp build_request_uri(%State{method: method} = state) when method in [:get, :delete] do
@@ -95,10 +101,10 @@ defmodule JiraConnect.HTTP do
       |> Enum.reduce({0, state.path}, fn({k, v}, {index, acc}) ->
         case index do
           0 ->
-            {1, "#{acc}?#{k}=#{v}"}
+            {1, "#{acc}?#{snake_case_to_camel_case(k)}=#{v}"}
 
           _ ->
-            {1, "#{acc}&#{k}=#{v}"}
+            {1, "#{acc}&#{snake_case_to_camel_case(k)}=#{v}"}
         end
       end)
 
@@ -150,5 +156,20 @@ defmodule JiraConnect.HTTP do
   end
   defp filter_params(params) do
     for {_k, v} = p <- params, v != nil, into: %{}, do: p
+  end
+
+  defp snake_case_to_camel_case(k) when is_atom(k) do
+    k
+    |> Atom.to_string()
+    |> snake_case_to_camel_case()
+  end
+  defp snake_case_to_camel_case(k) do
+    case String.split(k, "_") do
+      [k] ->
+        k
+
+      [part | tail] ->
+        Enum.reduce(tail, part, fn(k, acc) -> "#{acc}#{String.capitalize(k)}" end)
+    end
   end
 end
