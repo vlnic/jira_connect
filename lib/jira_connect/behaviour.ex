@@ -1,7 +1,7 @@
 defmodule JiraConnect.Behaviour do
   defmacro __using__(_opts \\ []) do
     quote do
-      @after_compile {BybitHttp.API, :__after_compile__}
+      @after_compile {JiraConnect.API, :__after_compile__}
 
       Module.register_attribute __MODULE__, :methods, accumulate: true
 
@@ -15,7 +15,7 @@ defmodule JiraConnect.Behaviour do
 
   def define_module(env) do
     module = Module.concat(env.module, Behaviour)
-    methods = env.module.__methods__
+    methods = env.module.__methods__()
 
     contents = Enum.map(methods, &define_callbacks/1)
 

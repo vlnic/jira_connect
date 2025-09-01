@@ -11,6 +11,8 @@ defmodule JiraConnect.HTTP do
 
   @client_impl Application.compile_env(:jira_connect, :http_impl, JiraConnect.HTTP.Finch)
 
+  require Logger
+
   defmodule State do
     defstruct [
       :method, :uri, :path, :req_headers, :req_body,
@@ -65,7 +67,8 @@ defmodule JiraConnect.HTTP do
   defp process_response(%State{status: code}) when code in 500..599 do
     {:error, %{reason: "service_unavailable"}}
   end
-  defp process_response(%State{error: error}) do
+  defp process_response(%State{error: error} = state) do
+    Logger.warning("failed request with state: #{inspect state, pretty: true}")
     {:error, %{reason: error}}
   end
 
@@ -137,7 +140,7 @@ defmodule JiraConnect.HTTP do
   defp get_path_keys(path) do
     ~r/\/\:\w+/
     |> Regex.scan(path)
-    |> Enum.take(2)
+    |> Enum.take(3)
     |> List.flatten()
     |> Enum.map(fn(k) -> String.replace(k, "/:", "") end)
   end

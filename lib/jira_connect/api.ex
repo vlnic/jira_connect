@@ -9,7 +9,7 @@ defmodule JiraConnect.API do
   end
 
   defmacro action(name, opts) do
-    {endpoint, opts} = Keyword.pop(opts, :uri)
+    {endpoint, opts} = Keyword.pop(opts, :endpoint)
     {params, opts} = Keyword.pop(opts, :params)
     {params_fn, opts} = Keyword.pop(opts, :params_fn)
 
