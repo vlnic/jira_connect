@@ -72,9 +72,18 @@ defmodule JiraConnect.HTTP do
     {:error, %{reason: error}}
   end
 
-  defp build_request_headers(%State{} = state) do
+  defp build_request_headers(%State{opts: opts} = state) do
+    token =
+      case Keyword.fetch(opts, :api_token) do
+        {:ok, token} ->
+          token
+
+        _ ->
+          JiraConnect.auth_token()
+      end
+
     headers = [
-      {"Authorization", "Bearer #{JiraConnect.auth_token()}"},
+      {"Authorization", "Bearer #{token}"},
       {"Content-Type", "application/json"}
     ]
     %{state | req_headers: headers}
