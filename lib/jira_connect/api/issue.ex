@@ -19,8 +19,9 @@ defmodule JiraConnect.Issue do
     endpoint: {:post, "/rest/api/2/search"},
     params: [
       jql: :string,
-      start_at: :integer, default: 0,
-      max_results: :integer, default: nil,
-      fields: {:array, :string}, default: nil
-    ]
+      fields: {{:array, :string}, default: nil},
+      start_at: {:integer, default: 0},
+      max_results: {:integer, default: 50}
+    ],
+    dbg: true
 end
