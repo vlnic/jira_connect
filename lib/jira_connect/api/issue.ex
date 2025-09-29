@@ -22,6 +22,5 @@ defmodule JiraConnect.Issue do
       fields: {{:array, :string}, default: nil},
       start_at: {:integer, default: 0},
       max_results: {:integer, default: 50}
-    ],
-    dbg: true
+    ]
 end
