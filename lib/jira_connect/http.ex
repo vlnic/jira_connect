@@ -73,20 +73,19 @@ defmodule JiraConnect.HTTP do
   end
 
   defp build_request_headers(%State{opts: opts} = state) do
-    token =
-      case Keyword.fetch(opts, :api_token) do
-        {:ok, token} ->
-          token
+    {token, opts} = Keyword.pop(opts, :api_token)
 
-        _ ->
-          JiraConnect.auth_token()
+    token = 
+      case token do
+        nil -> JiraConnect.auth_token()
+        _token -> token
       end
 
     headers = [
       {"Authorization", "Bearer #{token}"},
       {"Content-Type", "application/json"}
     ]
-    %{state | req_headers: headers}
+    %{state | req_headers: headers, opts: opts}
   end
 
   defp build_request_body(%State{method: method} = state) when method in [:get, :delete] do
