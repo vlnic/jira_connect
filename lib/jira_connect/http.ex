@@ -107,9 +107,6 @@ defmodule JiraConnect.HTTP do
       state.params
       |> Map.to_list()
       |> Enum.reduce({0, state.path}, fn({k, v}, {index, acc}) ->
-        k = String.trim(k)
-        v = String.trim(v)
-
         case index do
           0 ->
             {1, "#{acc}?#{snake_case_to_camel_case(k)}=#{v}"}
@@ -127,7 +124,7 @@ defmodule JiraConnect.HTTP do
   end
 
   defp build_uri(path) do
-    path = URI.encode_query(path, :rfc3986)
+    path = URI.encode(path)
 
     JiraConnect.host()
     |> Path.join(path)
